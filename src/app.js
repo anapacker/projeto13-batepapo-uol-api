@@ -27,14 +27,14 @@ app.post("/participants", async (req, res) => {
     try {
         const nameExists = await db.collection("participants").findOne({ name: name })
         if (nameExists) return res.sendStatus(409)
-        await db.collection("participants").insertOne({ name: name, lastStatus: Date.now() })
+        await db.collection("participants").insertOne({ name, lastStatus: Date.now() })
         await db.collection("messages").insertOne(
             { from: name, to: 'Todos', text: "entra na sala...", type: 'status', time: dayjs().format('HH:mm:ss') }
         )
 
         res.sendStatus(201)
     } catch (err) {
-        res.status(409).send(err.message)
+        res.status(500).send(err.message)
     }
 
 })
@@ -52,7 +52,7 @@ app.get("/participants", async (req, res) => {
 //     const { to, text, type } = req.body
 
 //     try{
-//     const message = db.collection("message").insertOne({ to, text, type })
+//     const message = await db.collection("message").insertOne({ to, text, type })
 //     res.send(message)
 //     }catch(err){
 
