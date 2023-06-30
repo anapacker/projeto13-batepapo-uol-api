@@ -23,6 +23,11 @@ app.post("/participants", async (req, res) => {
     if (!name) {
         return res.sendStatus(422)
     }
+    const nameSchema = joi.object({
+        name: joi.string().required()
+    })
+    const validate = nameSchema.validate(req.body)
+    if (validate.error) return res.sendStatus(422)
 
     try {
         const nameExists = await db.collection("participants").findOne({ name: name })
@@ -44,21 +49,30 @@ app.get("/participants", async (req, res) => {
         const participant = await db.collection("participants").find().toArray()
         res.send(participant)
     } catch (err) {
-        res.sendStatus(500)
+        res.sendStatus(422)
     }
 })
 
-// app.post("/messages", async(req, res) => {
-//     const { to, text, type } = req.body
+app.post("/messages", async (req, res) => {
+    const { to, text, type } = req.body
+    const { from } = req.headers.user
 
-//     try{
-//     const message = await db.collection("message").insertOne({ to, text, type })
-//     res.send(message)
-//     }catch(err){
+    if (!to || !text || !type) {
+        return res.sendStatus(422)
+    }
 
-//     }
-//     promisse.then(names => )
-//     promisse.( => res.status)
+    try {
+        const participantExists = await db.collection("messages").findOne({ name: from })
+        if (!participantExists) {
+            res.sendStatus(422)
+        }
+        await db.collection("messages").insertOne({ from, to, text, type, })
+        res.send(message)
+    } catch (err) {
+        res.sendStatus(500)
+    }
+}
+)
 
 // })
 // app.get("/messages", (req, res) => {
