@@ -20,9 +20,7 @@ mongoClient.connect()
 
 app.post("/participants", async (req, res) => {
     const { name } = req.body
-    if (!name) {
-        return res.sendStatus(422)
-    }
+
     const nameSchema = Joi.object({
         name: Joi.string().required()
     })
@@ -55,7 +53,8 @@ app.get("/participants", async (req, res) => {
 
 app.post("/messages", async (req, res) => {
     const { to, text, type } = req.body
-    const { user: from } = req.headers
+
+    const from = req.headers.user
     const messagesSchema = Joi.object({
         to: Joi.string().required(),
         type: Joi.string().valid('message', 'private_message').required(),
@@ -81,16 +80,36 @@ app.post("/messages", async (req, res) => {
 })
 
 app.get("/messages", async (req, res) => {
+    const limit = parseInt(req.query.limit)
+    const { user } = req.headers
+
+    if (limit <= 0 || isNaN(limit) || !user) {
+        return res.sendStatus(422)
+    }
     try {
-        const messages = await db.collection("messages").find().toArray()
+        const searchParams = {
+            $or: [
+                { to: "Todos" },
+                { from: "Todos" },
+                { to: user },
+                { from: user },
+                { type: "message" }
+            ]
+        }
+
+        if (limit) {
+            const limitMessages = await db.collection("messages").find(searchParams).limit(limit).toArray()
+            res.send(limitMessages)
+            return
+        }
+
+        const messages = await db.collection("messages").find(searchParams).toArray()
         res.send(messages)
     } catch (err) {
         res.status(500).send(err.message)
     }
 
 })
-
-
 
 const PORT = 5000
 app.listen(PORT, () => console.log(`servidor rodando na porta ${PORT}`))
