@@ -84,7 +84,7 @@ app.get("/messages", async (req, res) => {
     if (limit) {
         limit = parseInt(limit)
     }
-    const { user: User } = req.headers
+    const { User: User } = req.headers
 
     if (limit && (limit <= 0 || isNaN(limit) || !User)) {
         return res.sendStatus(422)
