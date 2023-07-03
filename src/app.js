@@ -80,7 +80,7 @@ app.post("/messages", async (req, res) => {
 })
 
 app.get("/messages", async (req, res) => {
-    const limit = req.query.limit
+    let limit = req.query.limit
     if (limit) {
         limit = parseInt(limit)
     }
