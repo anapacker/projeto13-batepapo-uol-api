@@ -54,7 +54,7 @@ app.get("/participants", async (req, res) => {
 app.post("/messages", async (req, res) => {
     const { to, text, type } = req.body
 
-    const from = req.headers.user
+    const from = req.headers.User
     const messagesSchema = Joi.object({
         to: Joi.string().required(),
         type: Joi.string().valid('message', 'private_message').required(),
@@ -84,9 +84,9 @@ app.get("/messages", async (req, res) => {
     if (limit) {
         limit = parseInt(limit)
     }
-    const { user } = req.headers
+    const { user: User } = req.headers
 
-    if (limit && (limit <= 0 || isNaN(limit) || !user)) {
+    if (limit && (limit <= 0 || isNaN(limit) || !User)) {
         return res.sendStatus(422)
     }
     try {
@@ -94,8 +94,8 @@ app.get("/messages", async (req, res) => {
             $or: [
                 { to: "Todos" },
                 { from: "Todos" },
-                { to: user },
-                { from: user },
+                { to: User },
+                { from: User },
                 { type: "message" }
             ]
         }
@@ -114,7 +114,7 @@ app.get("/messages", async (req, res) => {
 
 })
 app.post("/status", async (req, res) => {
-    const user = req.headers.user
+    const user = req.headers.User
 
     if (!user) {
         return res.sendStatus(404)
