@@ -80,10 +80,13 @@ app.post("/messages", async (req, res) => {
 })
 
 app.get("/messages", async (req, res) => {
-    const limit = parseInt(req.query.limit)
+    const limit = req.query.limit
+    if (limit) {
+        limit = parseInt(limit)
+    }
     const { user } = req.headers
 
-    if (limit <= 0 || isNaN(limit) || !user) {
+    if (limit && (limit <= 0 || isNaN(limit) || !user)) {
         return res.sendStatus(422)
     }
     try {
@@ -117,7 +120,6 @@ app.post("/status", async (req, res) => {
         return res.sendStatus(404)
     }
     const userAtualizado = { name: user, lastStatus: Date.now() }
-
     try {
         const { modifiedCount } = await db.collection("participants").updateOne({ name: user }, { $set: userAtualizado })
         if (modifiedCount === 0) {
@@ -130,6 +132,34 @@ app.post("/status", async (req, res) => {
     }
 
 })
+
+async function removerUserInativos() {
+    const dateNow = Date.now()
+    try {
+        const usersASeremRemovidos = await db
+            .collection("participants")
+            .find({ lastStatus: { $lt: dateNow - 10000 } })
+            .toArray()
+
+        for (let i = 0; i < usersASeremRemovidos.length; i++) {
+            await db.collection("messages").insertOne({
+                from: usersASeremRemovidos[i].name,
+                to: 'Todos',
+                text: 'sai da sala...',
+                type: 'status',
+                time: dayjs().format('HH:mm:ss')
+            })
+        }
+        const lastStatusUser = await db
+            .collection("participants")
+            .deleteMany({ lastStatus: { $lt: dateNow - 10000 } })
+
+
+    } catch (err) {
+        console.log(err)
+    }
+}
+setInterval(removerUserInativos, 15000)
 
 const PORT = 5000
 app.listen(PORT, () => console.log(`servidor rodando na porta ${PORT}`))
