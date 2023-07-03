@@ -1,7 +1,7 @@
 import express from "express"
 import cors from "cors"
-import { MongoClient } from "mongodb";
-import joi from "joi"
+import { MongoClient, ObjectId } from "mongodb";
+import Joi from "joi"
 import dotenv from "dotenv";
 import dayjs from "dayjs";
 
@@ -23,8 +23,8 @@ app.post("/participants", async (req, res) => {
     if (!name) {
         return res.sendStatus(422)
     }
-    const nameSchema = joi.object({
-        name: joi.string().required()
+    const nameSchema = Joi.object({
+        name: Joi.string().required()
     })
     const validate = nameSchema.validate(req.body)
     if (validate.error) return res.sendStatus(422)
@@ -55,30 +55,30 @@ app.get("/participants", async (req, res) => {
 
 app.post("/messages", async (req, res) => {
     const { to, text, type } = req.body
-
-    if (!to || !text || !type) {
-        return res.sendStatus(422)
-    }
-
-    const { from } = req.headers.user
-    const messagesSchema = joi.object({
-        to: joi.string().required(),
-        text: joi.string().required(),
-        type: joi.valid('message, private_message').required
+    const { user: from } = req.headers
+    const messagesSchema = Joi.object({
+        to: Joi.string().required(),
+        type: Joi.string().valid('message', 'private_message').required(),
+        text: Joi.string().required()
     })
 
+    const validation = messagesSchema.validate(req.body, { abortEarly: false })
+    if (validation.error) {
+        const errors = validation.error.details.map(detail => detail.message)
+        return res.status(422).send(errors)
+    }
+
     try {
-        const participantExists = await db.collection("participants").findOne({ name: from })
-        if (!participantExists) {
-            res.sendStatus(422)
+        const userExists = await db.collection("participants").findOne({ name: from })
+        if (!userExists) {
+            return res.sendStatus(422)
         }
-        await db.collection("messages").insertOne({ from, to, text, type, })
-        res.send(message)
+        await db.collection("messages").insertOne({ from, to, text, type, time: dayjs().format('HH:mm:ss') })
+        res.sendStatus(201)
     } catch (err) {
         res.sendStatus(500)
     }
-}
-)
+})
 
 app.get("/messages", async (req, res) => {
     try {
@@ -89,6 +89,7 @@ app.get("/messages", async (req, res) => {
     }
 
 })
+
 
 
 const PORT = 5000
